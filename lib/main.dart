@@ -16,9 +16,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.orange,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Spam SMS Checker'),
     );
   }
 }
@@ -96,6 +96,16 @@ class _MessagesListView extends StatelessWidget {
 
   final List<SmsMessage> messages;
 
+  Future<int> checkSpam(msg) async {
+    var url = Uri.parse("http://10.0.2.2:5000/checkMailSpam");
+    var response = await http.post(url, body: {
+      'data': msg,
+      'prompt': 'Please tell me if this message is spam or not spam'
+    });
+    print('Response body: ${response.body}');
+    return 1;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -107,6 +117,42 @@ class _MessagesListView extends StatelessWidget {
         return ListTile(
           title: Text('${message.sender} [${message.date}]'),
           subtitle: Text('${message.body}'),
+          trailing: IconButton(
+            icon: const Icon(Icons.question_mark),
+            onPressed: () => {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Kavach Spam Checker'),
+                    content: const Text(
+                      'This has high probability (92%) of being a SPAM message.',
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          textStyle: Theme.of(context).textTheme.labelLarge,
+                        ),
+                        child: const Text('Delete'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          textStyle: Theme.of(context).textTheme.labelLarge,
+                        ),
+                        child: const Text('Keep'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              )
+            },
+          ),
         );
       },
     );
