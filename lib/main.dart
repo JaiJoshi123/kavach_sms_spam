@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
+import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
 
 void main() {
   runApp(const MyApp());
@@ -89,21 +90,27 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class _MessagesListView extends StatelessWidget {
-  const _MessagesListView({
+  _MessagesListView({
     Key? key,
     required this.messages,
   }) : super(key: key);
 
   final List<SmsMessage> messages;
 
-  Future<int> checkSpam(msg) async {
-    var url = Uri.parse("http://10.0.2.2:5000/checkMailSpam");
-    var response = await http.post(url, body: {
-      'data': msg,
-      'prompt': 'Please tell me if this message is spam or not spam'
-    });
-    print('Response body: ${response.body}');
-    return 1;
+  Future<String> checkSpam(msg) async {
+    final openAI = OpenAI.instance.build(
+      token: "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",
+      baseOption: HttpSetup(receiveTimeout: 5000),
+    );
+    final request = CompleteText(
+      prompt:
+          'Please tell me if the following message is spam or not spam: ${msg}',
+      model: "text-davinci-003",
+      maxTokens: 200,
+    );
+
+    final response = await openAI.onCompleteText(request: request);
+    return response!.choices.first.text;
   }
 
   @override
@@ -120,37 +127,35 @@ class _MessagesListView extends StatelessWidget {
           trailing: IconButton(
             icon: const Icon(Icons.question_mark),
             onPressed: () => {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: const Text('Kavach Spam Checker'),
-                    content: const Text(
-                      'This has high probability (92%) of being a SPAM message.',
-                    ),
-                    actions: <Widget>[
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          textStyle: Theme.of(context).textTheme.labelLarge,
-                        ),
-                        child: const Text('Delete'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          textStyle: Theme.of(context).textTheme.labelLarge,
-                        ),
-                        child: const Text('Keep'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                    ],
-                  );
-                },
-              )
+              checkSpam(message.body).then((String value) => showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Kavach Spam Checker'),
+                        content: Text(value),
+                        actions: <Widget>[
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              textStyle: Theme.of(context).textTheme.labelLarge,
+                            ),
+                            child: const Text('Close'),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              textStyle: Theme.of(context).textTheme.labelLarge,
+                            ),
+                            child: const Text('Keep'),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ))
             },
           ),
         );
