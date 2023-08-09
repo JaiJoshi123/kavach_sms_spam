@@ -3,8 +3,10 @@ import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 import 'package:chat_gpt_sdk/chat_gpt_sdk.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+void main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
@@ -99,7 +101,7 @@ class _MessagesListView extends StatelessWidget {
 
   Future<String> checkSpam(msg) async {
     final openAI = OpenAI.instance.build(
-      token: "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",
+      token: dotenv.env['OPEN_AI_ACCESS'],
       baseOption: HttpSetup(receiveTimeout: 5000),
     );
     final request = CompleteText(
